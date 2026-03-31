@@ -17,7 +17,35 @@ Content-Type: application/json
     "password": "my_secure_password"
 }
 
-### 3. 验证拦截 (不带 Token 发帖)
+### 3. 测试图片上传
+POST http://localhost:8080/api/v1/upload
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+# REST Client 上传文件时要使用 multipart/form-data + < 文件路径
+# 请把下面这个路径替换为你本机的图片文件路径
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="test.png"
+Content-Type: image/png
+
+< /Users/imaichika/Downloads/test.png
+--WebAppBoundary--
+
+# 成功后返回 JSON，里面会有 url 字段
+
+### 4. 测试发布带封面和图片的文章
+POST http://localhost:8080/api/v1/posts
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+    "title": "测试图文混排",
+    "author": "imai",
+    "cover_image": "http://localhost:8080/uploads/<刚才生成的图片名>.jpg",
+    "content": "这是一段文字。\n\n这是文章内插入的图片：\n![配图](http://localhost:8080/uploads/<另一张图片名>.png)\n\nMarkdown 就是这么简单！"
+}
+
+### 5. 验证拦截 (不带 Token 发帖)
 # 预期结果: 401 Unauthorized
 POST http://localhost:8080/api/v1/posts
 Content-Type: application/json
@@ -58,10 +86,11 @@ Content-Type: application/json
 Authorization: Bearer {{login.response.body.token}}
 
 {
-    "title": "测试文章 3",
-    "content": "这是第 3 篇测试文章。",
-    "author": "imai"
+  "title": "新的文章",
+  "content": "这是内容",
+  "cover_image": "http://localhost:8080/uploads/xxx.png"
 }
+
 
 ### 7. 分页测试 page=1&page_size=2
 GET http://localhost:8080/api/v1/posts?page=1&page_size=2
@@ -78,3 +107,5 @@ Authorization: Bearer {{login.response.body.token}}
 ### 10. 删除后再次读取已删文章
 GET http://localhost:8080/api/v1/posts/{{createPost1.response.body.ID}}
 Accept: application/json
+
+

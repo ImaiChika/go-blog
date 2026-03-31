@@ -9,6 +9,7 @@ type Post struct {
 	Title      string `json:"title" gorm:"type:varchar(100);not null"`
 	Content    string `json:"content" gorm:"type:text;not null"`
 	Author     string `json:"author" gorm:"type:varchar(20);default:'Anonymous'"`
+	CoverImage string `json:"cover_image" gorm:"type:varchar(255)"` // 新增封面图字段，保存图片的 URL
 }
 
 //gorm.Model：这是一个嵌套结构体，帮我们自动管理主键和时间戳。
