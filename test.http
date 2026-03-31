@@ -1,0 +1,80 @@
+### 1. 用户注册
+POST http://localhost:8080/register
+Content-Type: application/json
+
+{
+    "username": "imai",
+    "password": "my_secure_password"
+}
+
+### 2. 用户登录 (获取 Token)
+# @name login
+POST http://localhost:8080/login
+Content-Type: application/json
+
+{
+    "username": "imai",
+    "password": "my_secure_password"
+}
+
+### 3. 验证拦截 (不带 Token 发帖)
+# 预期结果: 401 Unauthorized
+POST http://localhost:8080/api/v1/posts
+Content-Type: application/json
+
+{
+    "title": "未授权的测试",
+    "content": "这条内容不应该被存入数据库"
+}
+
+### 4. 创建文章 1
+# @name createPost1
+POST http://localhost:8080/api/v1/posts
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+    "title": "测试文章 1",
+    "content": "这是第 1 篇测试文章。",
+    "author": "imai"
+}
+
+### 5. 创建文章 2
+# @name createPost2
+POST http://localhost:8080/api/v1/posts
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+    "title": "测试文章 2",
+    "content": "这是第 2 篇测试文章。",
+    "author": "imai"
+}
+
+### 6. 创建文章 3
+# @name createPost3
+POST http://localhost:8080/api/v1/posts
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+    "title": "测试文章 3",
+    "content": "这是第 3 篇测试文章。",
+    "author": "imai"
+}
+
+### 7. 分页测试 page=1&page_size=2
+GET http://localhost:8080/api/v1/posts?page=1&page_size=2
+Accept: application/json
+
+### 8. 分页测试 page=2&page_size=2
+GET http://localhost:8080/api/v1/posts?page=2&page_size=2
+Accept: application/json
+
+### 9. 删除文章 1
+DELETE http://localhost:8080/api/v1/posts/{{createPost1.response.body.ID}}
+Authorization: Bearer {{login.response.body.token}}
+
+### 10. 删除后再次读取已删文章
+GET http://localhost:8080/api/v1/posts/{{createPost1.response.body.ID}}
+Accept: application/json
