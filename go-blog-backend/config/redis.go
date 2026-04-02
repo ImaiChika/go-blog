@@ -12,9 +12,9 @@ var ctx = context.Background()
 
 func InitRedis() {
 	RDB = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
+		Addr:     GetRedisAddr(),
+		Password: GetRedisPassword(),
+		DB:       GetRedisDB(),
 	})
 	_, err := RDB.Ping(ctx).Result()
 	if err != nil {

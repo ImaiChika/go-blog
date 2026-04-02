@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"mime/multipart"
@@ -67,7 +68,11 @@ func TestUploadImageSavesMultipartFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create form file: %v", err)
 	}
-	if _, err := io.WriteString(part, "fake image bytes"); err != nil {
+	pngBytes, err := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a5WQAAAAASUVORK5CYII=")
+	if err != nil {
+		t.Fatalf("failed to decode png bytes: %v", err)
+	}
+	if _, err := part.Write(pngBytes); err != nil {
 		t.Fatalf("failed to write form file: %v", err)
 	}
 	if err := writer.Close(); err != nil {
@@ -99,5 +104,38 @@ func TestUploadImageSavesMultipartFile(t *testing.T) {
 	}
 	if len(matches) != 1 {
 		t.Fatalf("expected exactly one uploaded file, got %d", len(matches))
+	}
+}
+
+func TestUploadImageRejectsTextFile(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	router.POST("/api/v1/upload", UploadImage)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("file", "test.txt")
+	if err != nil {
+		t.Fatalf("failed to create form file: %v", err)
+	}
+	if _, err := io.WriteString(part, "plain text file"); err != nil {
+		t.Fatalf("failed to write form file: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("failed to close multipart writer: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/upload", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected status %d, got %d, body=%s", http.StatusBadRequest, rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "只允许上传 jpg 和 png 文件类型") {
+		t.Fatalf("expected file type validation error, got %s", rec.Body.String())
 	}
 }

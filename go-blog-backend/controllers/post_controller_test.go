@@ -168,3 +168,47 @@ func TestDeletePostAllowsAuthor(t *testing.T) {
 		t.Fatalf("expected post to be deleted, count=%d", count)
 	}
 }
+
+func TestGetPostsReturnsNewestFirst(t *testing.T) {
+	setupPostControllerTestDeps(t)
+	gin.SetMode(gin.TestMode)
+
+	older := createTestPost(t, "sort_owner")
+	newer := createTestPost(t, "sort_owner")
+
+	olderTime := time.Date(2098, time.January, 1, 0, 0, 0, 0, time.UTC)
+	newerTime := time.Date(2099, time.January, 1, 0, 0, 0, 0, time.UTC)
+
+	if err := config.DB.Model(&models.Post{}).Where("id = ?", older.ID).Update("created_at", olderTime).Error; err != nil {
+		t.Fatalf("failed to update older created_at: %v", err)
+	}
+	if err := config.DB.Model(&models.Post{}).Where("id = ?", newer.ID).Update("created_at", newerTime).Error; err != nil {
+		t.Fatalf("failed to update newer created_at: %v", err)
+	}
+
+	router := gin.New()
+	router.GET("/api/v1/posts", GetPosts)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/posts?page=1&page_size=2", nil)
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d, body=%s", http.StatusOK, rec.Code, rec.Body.String())
+	}
+
+	var resp struct {
+		Data []models.Post `json:"data"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to parse response: %v", err)
+	}
+
+	if len(resp.Data) < 2 {
+		t.Fatalf("expected at least two posts in response, got %d", len(resp.Data))
+	}
+	if resp.Data[0].ID != newer.ID || resp.Data[1].ID != older.ID {
+		t.Fatalf("expected newest posts first, got ids %d then %d", resp.Data[0].ID, resp.Data[1].ID)
+	}
+}

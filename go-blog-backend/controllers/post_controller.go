@@ -93,7 +93,7 @@ func GetPosts(c *gin.Context) {
 	var posts []models.Post
 	var total int64
 	config.DB.Model(&models.Post{}).Count(&total)
-	config.DB.Limit(query.PageSize).Offset(offset).Find(&posts)
+	config.DB.Order("created_at DESC").Limit(query.PageSize).Offset(offset).Find(&posts)
 
 	c.JSON(http.StatusOK, gin.H{
 		"data":      posts,
