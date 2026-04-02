@@ -5,19 +5,35 @@ import (
 	"go-blog-backend/models"
 	"go-blog-backend/utils"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
+type authRequest struct {
+	Username string `json:"username" binding:"required,min=3,max=20"`
+	Password string `json:"password" binding:"required,min=6,max=32"`
+}
+
 func Register(c *gin.Context) {
-	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "输入数据无效"})
+	var input authRequest
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": bindErrorMessage(err)})
 		return
 	}
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-	user.Password = string(hashedPassword)
+
+	input.Username = strings.TrimSpace(input.Username)
+	if input.Username == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "用户名不能为空"})
+		return
+	}
+
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+	user := models.User{
+		Username: input.Username,
+		Password: string(hashedPassword),
+	}
 	if err := config.DB.Create(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "注册失败"})
 		return
@@ -25,8 +41,17 @@ func Register(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "注册成功"})
 }
 func Login(c *gin.Context) {
-	var input, user models.User
-	c.ShouldBindJSON(&input)
+	var input authRequest
+	var user models.User
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": bindErrorMessage(err)})
+		return
+	}
+	input.Username = strings.TrimSpace(input.Username)
+	if input.Username == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "用户名不能为空"})
+		return
+	}
 	if err := config.DB.Where("username=?", input.Username).First(&user).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户名不存在"})
 		return

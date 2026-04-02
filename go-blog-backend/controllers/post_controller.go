@@ -6,7 +6,7 @@ import (
 	"go-blog-backend/config"
 	"go-blog-backend/models"
 	"net/http"
-	"strconv"
+	"strings"
 	"time"
 
 	"encoding/json"
@@ -15,6 +15,17 @@ import (
 )
 
 var ctx = context.Background()
+
+type postRequest struct {
+	Title      string `json:"title" binding:"required,max=100"`
+	Content    string `json:"content" binding:"required"`
+	CoverImage string `json:"cover_image" binding:"omitempty,url"`
+}
+
+type postListQuery struct {
+	Page     int `form:"page" binding:"min=1"`
+	PageSize int `form:"page_size" binding:"min=1,max=100"`
+}
 
 func getCurrentUsername(c *gin.Context) (string, bool) {
 	usernameValue, exists := c.Get("username")
@@ -33,16 +44,33 @@ func getCurrentUsername(c *gin.Context) (string, bool) {
 }
 
 func CreatePost(c *gin.Context) {
-	var post models.Post
-	if err := c.ShouldBindJSON(&post); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var input postRequest
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": bindErrorMessage(err)})
 		return
 	}
 	username, ok := getCurrentUsername(c)
 	if !ok {
 		return
 	}
-	post.Author = username
+
+	input.Title = strings.TrimSpace(input.Title)
+	input.Content = strings.TrimSpace(input.Content)
+	if input.Title == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "标题不能为空"})
+		return
+	}
+	if input.Content == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "内容不能为空"})
+		return
+	}
+
+	post := models.Post{
+		Title:      input.Title,
+		Content:    input.Content,
+		Author:     username,
+		CoverImage: input.CoverImage,
+	}
 
 	result := config.DB.Create(&post)
 	if result.Error != nil {
@@ -52,26 +80,26 @@ func CreatePost(c *gin.Context) {
 	c.JSON(http.StatusOK, post)
 }
 func GetPosts(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
-	if page < 1 {
-		page = 1
+	query := postListQuery{
+		Page:     1,
+		PageSize: 10,
 	}
-	if pageSize < 1 {
-		pageSize = 10
+	if err := c.ShouldBindQuery(&query); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": bindErrorMessage(err)})
+		return
 	}
-	offset := (page - 1) * pageSize
+	offset := (query.Page - 1) * query.PageSize
 
 	var posts []models.Post
 	var total int64
 	config.DB.Model(&models.Post{}).Count(&total)
-	config.DB.Limit(pageSize).Offset(offset).Find(&posts)
+	config.DB.Limit(query.PageSize).Offset(offset).Find(&posts)
 
 	c.JSON(http.StatusOK, gin.H{
 		"data":      posts,
 		"total":     total,
-		"page":      page,
-		"page_size": pageSize,
+		"page":      query.Page,
+		"page_size": query.PageSize,
 	})
 }
 
@@ -110,13 +138,19 @@ func UpdatePost(c *gin.Context) {
 		return
 	}
 
-	var input struct {
-		Title      string `json:"title"`
-		Content    string `json:"content"`
-		CoverImage string `json:"cover_image"`
-	}
+	var input postRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": bindErrorMessage(err)})
+		return
+	}
+	input.Title = strings.TrimSpace(input.Title)
+	input.Content = strings.TrimSpace(input.Content)
+	if input.Title == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "标题不能为空"})
+		return
+	}
+	if input.Content == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "内容不能为空"})
 		return
 	}
 	post.Title = input.Title
