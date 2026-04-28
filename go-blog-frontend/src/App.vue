@@ -41,6 +41,7 @@ onUnmounted(() => {
       <nav class="site-nav">
         <RouterLink to="/">首页</RouterLink>
         <RouterLink to="/create">写文章</RouterLink>
+        <RouterLink v-if="isLoggedIn" to="/account/password">改密码</RouterLink>
         <RouterLink v-if="!isLoggedIn" to="/login">登录</RouterLink>
         <button v-else type="button" @click="logout">退出</button>
       </nav>

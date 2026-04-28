@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
 import PostDetailView from '../views/PostDetailView.vue'
 import CreatePostView from '../views/CreatePostView.vue'
+import ChangePasswordView from '../views/ChangePasswordView.vue'
 import { hasToken } from '../utils/auth'
 
 const routes = [
@@ -33,6 +34,14 @@ const routes = [
     path: '/posts/:id/edit',
     name: 'edit-post',
     component: CreatePostView,
+    meta: {
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/account/password',
+    name: 'change-password',
+    component: ChangePasswordView,
     meta: {
       requiresAuth: true,
     },

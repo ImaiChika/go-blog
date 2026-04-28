@@ -16,7 +16,7 @@ func InitDB() {
 	if err != nil {
 		panic("数据库连接失败" + err.Error())
 	}
-	db.AutoMigrate(&models.Post{}, &models.User{})
+	db.AutoMigrate(&models.Post{}, &models.User{}, &models.Comment{})
 	DB = db
 	fmt.Println("数据库连接完成并自动迁移完成！")
 }

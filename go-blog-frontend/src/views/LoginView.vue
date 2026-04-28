@@ -56,7 +56,7 @@ async function submitForm() {
 
       <label class="field">
         <span>用户名</span>
-        <input v-model.trim="username" type="text" autocomplete="username" placeholder="imai" />
+        <input v-model.trim="username" type="text" autocomplete="username" placeholder="请输入用户名" />
       </label>
 
       <label class="field">
@@ -64,7 +64,7 @@ async function submitForm() {
         <input
           v-model="password"
           type="password"
-          autocomplete="current-password"
+          :autocomplete="mode === 'login' ? 'current-password' : 'new-password'"
           placeholder="至少 6 位"
         />
       </label>

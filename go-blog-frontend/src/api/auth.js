@@ -19,3 +19,13 @@ export function register(username, password) {
     },
   })
 }
+
+export function changePassword(oldPassword, newPassword) {
+  return request('/api/v1/me/password', {
+    method: 'PUT',
+    body: {
+      old_password: oldPassword,
+      new_password: newPassword,
+    },
+  })
+}

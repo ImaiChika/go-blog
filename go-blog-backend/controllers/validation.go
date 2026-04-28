@@ -42,6 +42,10 @@ func validationFieldName(field string) string {
 		return "用户名"
 	case "Password":
 		return "密码"
+	case "OldPassword":
+		return "旧密码"
+	case "NewPassword":
+		return "新密码"
 	case "Title":
 		return "标题"
 	case "Content":

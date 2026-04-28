@@ -35,6 +35,7 @@ func SetupRouter() *gin.Engine {
 	{
 		v1.GET("/posts", controllers.GetPosts)        // 现在支持分页了
 		v1.GET("/posts/:id", controllers.GetPostByID) // 带 Redis 缓存
+		v1.GET("/posts/:id/comments", controllers.GetComments)
 	}
 
 	// 受保护的文章管理路由
@@ -46,6 +47,10 @@ func SetupRouter() *gin.Engine {
 		authorized.DELETE("/posts/:id", controllers.DeletePost) // 删除
 		// 【新增】：图片上传接口（防止陌生人往你的服务器乱传文件，必须登录）
 		authorized.POST("/upload", controllers.UploadImage)
+		authorized.POST("/posts/:id/comments", controllers.CreateComment)
+		authorized.DELETE("/comments/:id", controllers.DeleteComment)
+		authorized.PUT("/me/password", controllers.ChangePassword)
+
 	}
 
 	return r
